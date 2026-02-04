@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>valentine?</title>
+
+  <style>
+    @font-face{
+      font-family:"rainyhearts";
+      src:url("rainyhearts.ttf") format("truetype");
+      font-display:swap;
+    }
+
+    :root{
+      --bg:#ffffff;
+      --text:#000000;
+      --pink:#f983c1;
+    }
+
+    html, body{ height:100%; }
+
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:"rainyhearts", monospace;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+    }
+
+    .stage{
+      width:min(820px, 92vw);
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:18px;
+      padding:24px 0;
+    }
+
+    /* hearts gif only on password screen */
+    .hearts{
+      max-width:260px;
+      width:min(260px, 60vw);
+      height:auto;
+      image-rendering: pixelated;
+    }
+
+    .video{
+      width:min(760px, 92vw);
+    }
+
+    video{
+      width:100%;
+      height:auto;
+      display:block;
+      background:#fff;
+      image-rendering: pixelated;
+    }
+
+    h1{
+      margin:0;
+      font-size:clamp(28px, 4vw, 46px);
+      letter-spacing:0.5px;
+    }
+
+    .row{
+      display:flex;
+      gap:14px;
+      flex-wrap:wrap;
+      justify-content:center;
+    }
+
+    button{
+      background:var(--pink);
+      color:#ffffff;
+      font-weight:800;
+      border:none;
+      border-radius:14px;
+      padding:12px 18px;
+      font-family:"rainyhearts", monospace;
+      font-size:clamp(18px, 2.4vw, 26px);
+      cursor:pointer;
+      letter-spacing:0.4px;
+    }
+
+    button:active{ transform: translatey(1px); }
+
+    input[type="password"]{
+      background:transparent;
+      color:var(--text);
+      border:2px solid rgba(0,0,0,0.4);
+      border-radius:14px;
+      padding:12px 14px;
+      width:min(420px, 82vw);
+      font-family:"rainyhearts", monospace;
+      font-size:clamp(18px, 2.4vw, 26px);
+      outline:none;
+      text-align:center;
+    }
+
+    input[type="password"]::placeholder{
+      color:rgba(0,0,0,0.5);
+    }
+
+    .error{
+      display:none;
+      margin:0;
+      font-size:clamp(18px, 2.4vw, 26px);
+    }
+
+    .hidden{ display:none; }
+
+    .shake{ animation: shake .35s linear; }
+    @keyframes shake{
+      0% { transform: translatex(0); }
+      20%{ transform: translatex(-10px); }
+      40%{ transform: translatex(10px); }
+      60%{ transform: translatex(-8px); }
+      80%{ transform: translatex(8px); }
+      100%{ transform: translatex(0); }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- 1) password stage (gif only here) -->
+  <div class="stage" id="password-stage">
+    <img class="hearts" src="hearts.gif" alt="hearts" />
+    <h1>ask summi for the password</h1>
+
+    <input type="password" id="pw" placeholder="password" autocomplete="off" />
+
+    <div class="row">
+      <button id="pw-btn">submit</button>
+    </div>
+
+    <p class="error" id="pw-error">try again baby</p>
+  </div>
+
+  <!-- 2) video-only stage (no gif, no question yet) -->
+  <div class="stage hidden" id="video-stage">
+    <div class="video">
+      <!-- no loop, plays once -->
+      <video id="vid" autoplay playsinline muted controls>
+        <source src="video.mp4" type="video/mp4" />
+      </video>
+    </div>
+
+    <div class="row hidden" id="after-video-row">
+      <button id="baby-btn">baby...</button>
+    </div>
+  </div>
+
+  <!-- 3) question stage -->
+  <div class="stage hidden" id="question-stage">
+    <h1 id="q">will you be my valentine?</h1>
+
+    <div class="row" id="btns">
+      <button id="yes">yes, always</button>
+      <button id="no">umm..</button>
+    </div>
+
+    <h1 class="hidden" id="result" style="color: var(--pink);"></h1>
+  </div>
+
+  <script>
+    // --- password logic ---
+    const passwordStage = document.getElementById("password-stage");
+    const videoStage = document.getElementById("video-stage");
+    const questionStage = document.getElementById("question-stage");
+
+    const pw = document.getElementById("pw");
+    const pwBtn = document.getElementById("pw-btn");
+    const pwError = document.getElementById("pw-error");
+
+    const vid = document.getElementById("vid");
+    const afterVideoRow = document.getElementById("after-video-row");
+    const babyBtn = document.getElementById("baby-btn");
+
+    function shakeWrong(){
+      pwError.style.display = "block";
+      passwordStage.classList.remove("shake");
+      void passwordStage.offsetWidth;
+      passwordStage.classList.add("shake");
+      pw.value = "";
+      pw.focus();
+    }
+
+    function goToVideoStage(){
+      pwError.style.display = "none";
+      passwordStage.classList.add("hidden");
+      videoStage.classList.remove("hidden");
+
+      // ensure the "baby..." button is hidden until the video ends
+      afterVideoRow.classList.add("hidden");
+
+      // try to play (some browsers need user gesture if unmuted; we're muted so usually fine)
+      try { vid.currentTime = 0; vid.play(); } catch (e) {}
+    }
+
+    function checkPw(){
+      if (pw.value === "tiger"){
+        goToVideoStage();
+      } else {
+        shakeWrong();
+      }
+    }
+
+    pwBtn.addEventListener("click", checkPw);
+    pw.addEventListener("keydown", (e) => {
+      if (e.key === "enter") checkPw();
+    });
+
+    // show "baby..." when video ends
+    vid.addEventListener("ended", () => {
+      afterVideoRow.classList.remove("hidden");
+    });
+
+    // if the user scrubs to the end, ended will still fire; this is fine
+
+    babyBtn.addEventListener("click", () => {
+      videoStage.classList.add("hidden");
+      questionStage.classList.remove("hidden");
+    });
+
+    // --- decision tree ---
+    const stages = [
+      { yes: "yes, always", umm: "umm.." },
+      { yes: "jk baby, yes ofc", umm: "no?" },
+      { yes: "yes baby", umm: "i thought i said no already" },
+      {
+        yes: "yes, a million times yes. i'm sorry for saying no so many times. i actually really love you summi",
+        umm: "fine yeah i'll be your valentine"
+      }
+    ];
+
+    let i = 0;
+
+    const yesBtn = document.getElementById("yes");
+    const noBtn  = document.getElementById("no");
+    const btns   = document.getElementById("btns");
+    const result = document.getElementById("result");
+    const q = document.getElementById("q");
+
+    function setStage(idx){
+      yesBtn.textContent = stages[idx].yes;
+      noBtn.textContent  = stages[idx].umm;
+    }
+
+    function typeText(element, text, speed = 70){
+      element.textContent = "";
+      let j = 0;
+      const interval = setInterval(() => {
+        element.textContent += text.charAt(j);
+        j++;
+        if (j >= text.length) clearInterval(interval);
+      }, speed);
+    }
+
+    function showYes(){
+      btns.classList.add("hidden");
+      q.classList.add("hidden");
+      result.classList.remove("hidden");
+      typeText(result, "hell fucking yeah, baby", 70);
+    }
+
+    yesBtn.addEventListener("click", showYes);
+
+    noBtn.addEventListener("click", () => {
+      // final stage: the right button is also a yes
+      if (i >= stages.length - 1){
+        showYes();
+        return;
+      }
+      i += 1;
+      setStage(i);
+    });
+
+    setStage(i);
+  </script>
+</body>
+</html>
